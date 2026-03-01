@@ -1,0 +1,42 @@
+.google-map {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom marker animations */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.gm-style .gm-style-iw-c {
+  border-radius: 8px !important;
+  padding: 12px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+.gm-style .gm-style-iw-t::after {
+  background: linear-gradient(45deg, rgba(255,255,255,1) 50%, rgba(255,255,255,0) 51%, rgba(255,255,255,0) 100%) !important;
+  box-shadow: -2px 2px 2px 0 rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Route polyline animation */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.route-path {
+  animation: dash 1s linear infinite;
+  stroke-dasharray: 10;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .google-map {
+    height: 300px !important;
+  }
+}
