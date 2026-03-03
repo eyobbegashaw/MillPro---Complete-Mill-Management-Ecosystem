@@ -1141,3 +1141,18 @@ exports.cloneProduct = async (req, res) => {
     });
   }
 };
+
+  //  ,
+  //  ,
+  // createProduct,
+  // updateProduct,
+  // deleteProduct,
+  // togglePost,
+  // toggleFeatured,
+  // getCategories,
+  // searchProducts,
+  // addRating,
+  // getProductStats,
+  // bulkUpdateProducts,
+  // importProducts,
+  // exportProducts

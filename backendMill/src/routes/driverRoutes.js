@@ -1,6 +1,6 @@
 const express = require('express');
 const multer = require('multer');
-const { auth, authorize } = require('../middleware/auth');
+const { protect, authorize } = require('../middleware/auth');
 const driverController = require('../controllers/driverController');
 const deliveryController = require('../controllers/deliveryController');
 
@@ -10,7 +10,7 @@ const upload = multer({ dest: 'uploads/temp/' });
 // Driver management routes (admin only)
 router.post(
   '/',
-  auth,
+  protect,
   authorize('admin'),
   upload.fields([
     { name: 'licenseImage', maxCount: 1 },
@@ -20,14 +20,14 @@ router.post(
   driverController.createDriver
 );
 
-router.get('/', auth, authorize('admin', 'operator'), driverController.getDrivers);
-router.get('/available', auth, driverController.getAvailableDrivers);
-router.get('/stats/:id', auth, driverController.getDriverStats);
-router.get('/:id', auth, driverController.getDriverById);
+router.get('/', protect, authorize('admin', 'operator'), driverController.getDrivers);
+router.get('/available', protect, driverController.getAvailableDrivers);
+router.get('/stats/:id', protect, driverController.getDriverStats);
+router.get('/:id', protect, driverController.getDriverById);
 
 router.put(
   '/:id',
-  auth,
+  protect,
   authorize('admin'),
   upload.fields([
     { name: 'licenseImage', maxCount: 1 },
@@ -37,21 +37,21 @@ router.put(
 );
 
 // Driver self-service routes
-router.put('/location', auth, authorize('driver'), driverController.updateLocation);
-router.put('/status', auth, authorize('driver'), driverController.updateStatus);
-router.get('/me/deliveries/current', auth, authorize('driver'), driverController.getCurrentDelivery);
-router.get('/me/deliveries/history', auth, authorize('driver'), driverController.getDeliveryHistory);
-router.post('/toggle-availability', auth, authorize('driver'), driverController.toggleAvailability);
+router.put('/location', protect, authorize('driver'), driverController.updateLocation);
+router.put('/status', protect, authorize('driver'), driverController.updateStatus);
+router.get('/me/deliveries/current', protect, authorize('driver'), driverController.getCurrentDelivery);
+router.get('/me/deliveries/history', protect, authorize('driver'), driverController.getDeliveryHistory);
+router.post('/toggle-availability', protect, authorize('driver'), driverController.toggleAvailability);
 
 // Delivery assignment
 router.post(
   '/:id/assign-delivery',
-  auth,
+  protect,
   authorize('admin', 'operator'),
   driverController.assignDelivery
 );
 
 // Rating
-router.post('/:id/rate', auth, authorize('customer'), driverController.rateDriver);
+router.post('/:id/rate', protect, authorize('customer'), driverController.rateDriver);
 
 module.exports = router;

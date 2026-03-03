@@ -54,3 +54,13 @@ exports.authorize = (...roles) => {
     next();
   };
 };
+exports.isAny = (req, res, next) => {
+  // 1. መጀመሪያ 'protect' የሚለው ሚድልዌር ተጠቃሚው መሆኑን ያረጋግጣል (req.user ይፈጥራል)
+  // 2. 'isAny' ደግሞ ተጠቃሚው መኖሩን ብቻ አይቶ ያሳልፋል
+  if (req.user) {
+    return next(); // "እሺ ሎጊን አድርገሃል፣ እለፍ" ይለዋል
+  }
+  
+  // 3. ካልገባ ግን ይሄን መልዕክት ይሰጣል
+  return res.status(401).json({ message: 'እባክዎ መጀመሪያ ይግቡ' });
+};

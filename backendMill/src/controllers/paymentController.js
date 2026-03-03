@@ -500,3 +500,6 @@ exports.deletePaymentMethod = async (req, res) => {
     });
   }
 };
+
+  
+   

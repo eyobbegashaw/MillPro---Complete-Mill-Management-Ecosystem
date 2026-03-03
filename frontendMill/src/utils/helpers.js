@@ -498,3 +498,26 @@ export const generateUUID = () => {
     return v.toString(16);
   });
 };
+
+export const formatCurrency = (amount) => {
+  return new Intl.NumberFormat('en-ET', { style: 'currency', currency: 'ETB' }).format(amount);
+};
+
+export const formatDate = (date) => {
+  if (!date) return "";
+  return new Date(date).toLocaleDateString();
+};
+
+export const formatTime = (date) => {
+  if (!date) return "";
+  return new Date(date).toLocaleTimeString();
+};
+
+export const formatNumber = (num) => {
+  return new Intl.NumberFormat().format(num);
+};
+
+export const validatePhone = (phone) => {
+  const re = /^(^\+251|^251|^0)9[0-9]{8}$/;
+  return re.test(phone);
+};

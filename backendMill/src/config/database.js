@@ -6,8 +6,8 @@ module.exports = {
 
   // Connection Options
   options: {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+    // useNewUrlParser: true,
+    // useUnifiedTopology: true,
     autoIndex: process.env.NODE_ENV !== 'production', // Don't auto-index in production
     maxPoolSize: 10, // Maintain up to 10 socket connections
     minPoolSize: 2,

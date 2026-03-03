@@ -164,7 +164,7 @@ app.use(logger.errorLogger);
 app.use(errorHandler);
 
 // 404 handler
-app.use('*', (req, res) => {
+app.use('/', (req, res) => {
   logger.warn('Route not found', {
     method: req.method,
     url: req.originalUrl,

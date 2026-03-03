@@ -335,3 +335,215 @@ exports.getCustomerDeliveries = async (req, res) => {
     });
   }
 };
+ 
+
+exports.getDeliveries = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status, startDate, endDate } = req.query;
+    
+    const query = {};
+    
+    if (status) {
+      query.status = status;
+    }
+    
+    if (startDate && endDate) {
+      query.createdAt = { $gte: new Date(startDate), $lte: new Date(endDate) };
+    }
+    
+    const deliveries = await Delivery.find(query)
+      .populate('order', 'orderNumber customer totals')
+      .populate('customer', 'name phone')
+      .populate('driver', 'user')
+      .populate({
+        path: 'driver',
+        populate: {
+          path: 'user',
+          select: 'name'
+        }
+      })
+      .sort('-createdAt')
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    const total = await Delivery.countDocuments(query);
+    
+    res.json({
+      success: true,
+      deliveries,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+    
+  } catch (error) {
+    console.error('Get deliveries error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch deliveries'
+    });
+  }
+};
+ 
+exports.getDeliveryStats = async (req, res) => {
+  try {
+    const stats = await Delivery.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+    
+    const total = await Delivery.countDocuments();
+    const pending = await Delivery.countDocuments({ status: 'pending' });
+    const inTransit = await Delivery.countDocuments({ status: { $in: ['assigned', 'picked-up', 'in-transit'] } });
+    const delivered = await Delivery.countDocuments({ status: 'delivered' });
+    
+    res.json({
+      success: true,
+      stats: {
+        total,
+        pending,
+        inTransit,
+        delivered,
+        byStatus: stats
+      }
+    });
+    
+  } catch (error) {
+    console.error('Get delivery stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch delivery stats'
+    });
+  }
+};
+
+exports.getDeliveryById = async (req, res) => {
+  try {
+    const delivery = await Delivery.findById(req.params.id)
+      .populate({
+        path: 'order',
+        populate: {
+          path: 'items.product',
+          select: 'name image'
+        }
+      })
+      .populate({
+        path: 'driver',
+        populate: {
+          path: 'user',
+          select: 'name phone profilePicture'
+        }
+      })
+      .populate('customer', 'name phone address');
+    
+    if (!delivery) {
+      return res.status(404).json({
+        success: false,
+        message: 'Delivery not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      delivery
+    });
+    
+  } catch (error) {
+    console.error('Get delivery by id error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch delivery'
+    });
+  }
+};
+
+exports.uploadProof = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'No file uploaded'
+      });
+    }
+    
+    const delivery = await Delivery.findById(id);
+    
+    if (!delivery) {
+      return res.status(404).json({
+        success: false,
+        message: 'Delivery not found'
+      });
+    }
+    
+    // Save proof of delivery (you might want to use fileService here)
+    const proofUrl = `/uploads/proofs/${req.file.filename}`;
+    
+    delivery.proofOfDelivery = {
+      image: proofUrl,
+      uploadedAt: new Date()
+    };
+    
+    await delivery.save();
+    
+    res.json({
+      success: true,
+      message: 'Proof of delivery uploaded successfully',
+      proofUrl
+    });
+    
+  } catch (error) {
+    console.error('Upload proof error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload proof'
+    });
+  }
+};
+
+exports.reportIssue = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { issue, description } = req.body;
+    
+    const delivery = await Delivery.findById(id);
+    
+    if (!delivery) {
+      return res.status(404).json({
+        success: false,
+        message: 'Delivery not found'
+      });
+    }
+    
+    delivery.issues = delivery.issues || [];
+    delivery.issues.push({
+      type: issue,
+      description,
+      reportedBy: req.user.id,
+      reportedAt: new Date(),
+      status: 'pending'
+    });
+    
+    await delivery.save();
+    
+    res.json({
+      success: true,
+      message: 'Issue reported successfully'
+    });
+    
+  } catch (error) {
+    console.error('Report issue error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to report issue'
+    });
+  }
+};

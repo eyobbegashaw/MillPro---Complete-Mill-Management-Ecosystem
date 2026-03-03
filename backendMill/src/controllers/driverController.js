@@ -23,7 +23,7 @@ exports.getAllDrivers = async (req, res) => {
     });
   }
 };
-
+ 
 // Get driver by ID
 exports.getDriverById = async (req, res) => {
   try {
@@ -157,7 +157,7 @@ exports.createDriver = async (req, res) => {
     });
   }
 };
-
+ 
 // Update driver
 exports.updateDriver = async (req, res) => {
   try {
@@ -383,3 +383,314 @@ exports.getActiveDelivery = async (req, res) => {
     });
   }
 };
+
+ 
+
+exports.updateLocation = async(req,res) =>{
+
+};
+
+ 
+
+exports.getDeliveryHistory = async(req,res) =>{
+
+};
+
+
+exports.assignDelivery = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { deliveryId } = req.body;
+    
+    const driver = await Driver.findById(id);
+    
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Driver not found'
+      });
+    }
+    
+    const delivery = await Delivery.findById(deliveryId);
+    
+    if (!delivery) {
+      return res.status(404).json({
+        success: false,
+        message: 'Delivery not found'
+      });
+    }
+    
+    delivery.driver = driver._id;
+    delivery.status = 'assigned';
+    await delivery.save();
+    
+    driver.assignedDeliveries = driver.assignedDeliveries || [];
+    driver.assignedDeliveries.push(deliveryId);
+    driver.status = 'busy';
+    await driver.save();
+    
+    res.json({
+      success: true,
+      message: 'Delivery assigned successfully',
+      delivery
+    });
+    
+  } catch (error) {
+    console.error('Assign delivery error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to assign delivery'
+    });
+  }
+};
+
+exports.updateStatus = async (req, res) => {
+  try {
+    const { status } = req.body;
+    
+    const driver = await Driver.findOne({ user: req.user.id });
+    
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Driver not found'
+      });
+    }
+    
+    driver.status = status;
+    driver.updatedAt = new Date();
+    await driver.save();
+    
+    res.json({
+      success: true,
+      status: driver.status
+    });
+    
+  } catch (error) {
+    console.error('Update status error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update status'
+    });
+  }
+};
+
+exports.getCurrentDelivery = async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ user: req.user.id });
+    
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Driver not found'
+      });
+    }
+    
+    const currentDelivery = await Delivery.findOne({
+      driver: driver._id,
+      status: { $in: ['assigned', 'pickup-arrived', 'picked-up', 'in-transit', 'delivery-arrived'] }
+    }).populate({
+      path: 'order',
+      populate: {
+        path: 'customer',
+        select: 'name phone address'
+      }
+    });
+    
+    res.json({
+      success: true,
+      delivery: currentDelivery
+    });
+    
+  } catch (error) {
+    console.error('Get current delivery error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get current delivery'
+    });
+  }
+};
+
+exports.getDeliveryHistory = async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ user: req.user.id });
+    
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Driver not found'
+      });
+    }
+    
+    const deliveries = await Delivery.find({
+      driver: driver._id,
+      status: 'delivered'
+    })
+    .populate({
+      path: 'order',
+      populate: {
+        path: 'customer',
+        select: 'name'
+      }
+    })
+    .sort('-createdAt');
+    
+    res.json({
+      success: true,
+      deliveries
+    });
+    
+  } catch (error) {
+    console.error('Get delivery history error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get delivery history'
+    });
+  }
+};
+
+exports.toggleAvailability = async (req, res) => {
+  try {
+    const driver = await Driver.findOne({ user: req.user.id });
+    
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Driver not found'
+      });
+    }
+    
+    // Toggle between available and offline
+    driver.status = driver.status === 'available' ? 'offline' : 'available';
+    driver.updatedAt = new Date();
+    await driver.save();
+    
+    res.json({
+      success: true,
+      status: driver.status
+    });
+    
+  } catch (error) {
+    console.error('Toggle availability error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to toggle availability'
+    });
+  }
+};
+
+exports.rateDriver = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { rating, comment } = req.body;
+    
+    const driver = await Driver.findById(id);
+    
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Driver not found'
+      });
+    }
+    
+    const newRating = ((driver.rating * driver.totalRatings) + rating) / (driver.totalRatings + 1);
+    driver.rating = newRating;
+    driver.totalRatings += 1;
+    await driver.save();
+    
+    res.json({
+      success: true,
+      message: 'Driver rated successfully'
+    });
+    
+  } catch (error) {
+    console.error('Rate driver error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to rate driver'
+    });
+  }
+};
+
+exports.getDrivers = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, status } = req.query;
+    
+    const query = {};
+    if (status) {
+      query.status = status;
+    }
+    
+    const drivers = await Driver.find(query)
+      .populate('user', 'name email phone profilePicture isActive')
+      .populate('assignedDeliveries')
+      .limit(limit * 1)
+      .skip((page - 1) * limit);
+    
+    const total = await Driver.countDocuments(query);
+    
+    res.json({
+      success: true,
+      drivers,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+    
+  } catch (error) {
+    console.error('Get drivers error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch drivers'
+    });
+  }
+};
+
+exports.getDriverStats = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const driver = await Driver.findById(id);
+    
+    if (!driver) {
+      return res.status(404).json({
+        success: false,
+        message: 'Driver not found'
+      });
+    }
+    
+    const deliveries = await Delivery.find({ driver: id });
+    
+    const completedDeliveries = deliveries.filter(d => d.status === 'delivered').length;
+    const totalDeliveries = deliveries.length;
+    const avgDeliveryTime = calculateAvgDeliveryTime(deliveries); // You'd implement this
+    
+    res.json({
+      success: true,
+      stats: {
+        totalDeliveries,
+        completedDeliveries,
+        pendingDeliveries: totalDeliveries - completedDeliveries,
+        rating: driver.rating,
+        totalRatings: driver.totalRatings,
+        avgDeliveryTime
+      }
+    });
+    
+  } catch (error) {
+    console.error('Get driver stats error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get driver stats'
+    });
+  }
+};
+
+// Helper function
+function calculateAvgDeliveryTime(deliveries) {
+  // Implementation for calculating average delivery time
+  return 0;
+}
