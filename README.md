@@ -267,7 +267,7 @@ Project Link: [https://github.com/eyobbegashaw/MillPro---Complete-Mill-Managemen
 ](https://github.com/eyobbegashaw/MillPro---Complete-Mill-Management-Ecosystem
 )
 
-Website:https://eyobbegashaw.vercel.com
+Website:https://eyobbegashaw.vercel.app
 
 Email:eyobbegashaw075@gmail.com
 
