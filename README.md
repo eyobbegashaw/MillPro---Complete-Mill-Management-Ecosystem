@@ -1,5 +1,5 @@
 ﻿﻿# AI-Powered Smart Summarizer
-![Uploading image.png…]()
+![Uploading oneB.png…]()
 
 A production-ready document summarization tool with specialized support for Amharic and bilingual documents.
 
